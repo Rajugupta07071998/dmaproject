@@ -1,0 +1,133 @@
+from django.db import models
+import uuid
+from account.models import User
+
+# Create your models here.
+
+class BaseModel(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        abstract = True
+
+
+
+class PersonalInfo(BaseModel):
+    GENDER_CHOICES = (
+        ('male', 'Male'),
+        ('female', 'Female'),
+        ('other', 'Other'),
+    )
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    profile_pic = models.ImageField(upload_to='PersonalInfo/profile_pics/', null=True, blank=True)
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)
+    bio = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.user.get_full_name()} - Personal Info'
+
+
+
+class BusinessInfo(BaseModel):
+    BUSINESS_TYPE_CHOICES = (
+        ('music_academy', 'Music Academy'),
+        ('dance_academy', 'Dance Academy'),
+        ('art_academy', 'Art Academy'),
+        ('sports_academy', 'Sports Academy'),
+        ('coaching_center', 'Coaching Center'),
+        ('fitness_center', 'Gym & Fitness Center'),
+        ('retail', 'Retail'),
+        ('ecommerce', 'E-commerce'),
+        ('technology', 'Technology'),
+        ('finance', 'Finance'),
+        ('education', 'Education'),
+        ('healthcare', 'Healthcare'),
+        ('hospitality', 'Hospitality'),
+        ('manufacturing', 'Manufacturing'),
+        ('services', 'Services'),
+        ('real_estate', 'Real Estate'),
+        ('other', 'Other'),
+    )
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    business_type = models.CharField(max_length=30, choices=BUSINESS_TYPE_CHOICES, null=True, blank=True)
+    business_owner = models.CharField(max_length=100, blank=True)
+    business_name = models.CharField(max_length=255, blank=True)
+    business_about = models.TextField(null=True, blank=True, help_text="Short description about the business")
+    business_address = models.TextField()
+    business_phone = models.CharField(max_length=15)
+    business_website = models.URLField(null=True, blank=True)
+    business_email = models.EmailField(null=True, blank=True)
+    established_year = models.PositiveIntegerField(null=True, blank=True, help_text="Year of establishment")
+    number_of_employees = models.PositiveIntegerField(null=True, blank=True)
+    business_logo = models.ImageField(upload_to='BusinessInfo/business_logos/', null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.user.get_full_name()} - {self.business_name}'
+
+
+
+class BusinessMembership(BaseModel):
+    business = models.ForeignKey(BusinessInfo, on_delete=models.CASCADE, related_name="memberships")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="business_memberships")
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} -> {self.business.business_name}"
+    
+    class Meta:
+        abstract = True
+
+
+
+class MembershipRequest(BaseModel):
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+    )
+
+    business = models.ForeignKey(BusinessInfo, on_delete=models.CASCADE, related_name="membership_requests")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="membership_requests")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+
+    def accept(self):
+        """Accept request and add user to BusinessMembership"""
+        if self.status == 'pending':
+            self.status = 'accepted'
+            self.save()
+            BusinessMembership.objects.create(user=self.user, business=self.business)
+
+    def reject(self):
+        """Reject request"""
+        if self.status == 'pending':
+            self.status = 'rejected'
+            self.save()
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} -> {self.business.business_name} ({self.get_status_display()})"
+    
+    class Meta:
+        abstract = True
+
+
+
+
+class Achievement(BaseModel):
+    business = models.ForeignKey(BusinessInfo, related_name='achievements', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    date_awarded = models.DateField(null=True, blank=True)
+    image = models.ImageField(upload_to='Achievement/images/', null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.business.business_name} - {self.title}'
+    
+    class Meta:
+        abstract = True
+
