@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PersonalInfoAPIView, BusinessInfoAPIView, AchievementListCreateAPIView, AchievementDetailAPIView
+from .views import *
 
 urlpatterns = [
     # Personal Info
@@ -13,4 +13,8 @@ urlpatterns = [
     # Achievements
     path('achievements/', AchievementListCreateAPIView.as_view(), name='achievement-list-create'),
     path('achievements/<id>/', AchievementDetailAPIView.as_view(), name='achievement-detail'),
+
+    # Notification
+    path('notifications/', NotificationAPIView.as_view(), name='notifications'),
+    path('notifications/<notification_id>/read/', NotificationAPIView.as_view(), name='notification-read'),
 ]

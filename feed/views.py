@@ -9,6 +9,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from account.models import User
 from .models import *
+from core.models import *
 
 
 
@@ -93,6 +94,8 @@ class LikePostAPIView(APIView):
         if not created:
             like.delete()  # Unlike if already liked
             return Response({"message": "Unliked the post"}, status=status.HTTP_200_OK)
+        
+        create_feed_notification(request.user, like, 'post_like', f"{request.user.username} liked your post.")
 
         return Response({"message": "Liked the post"}, status=status.HTTP_201_CREATED)
     
@@ -112,4 +115,7 @@ class CommentPostAPIView(APIView):
             return Response({"error": "Comment cannot be empty"}, status=status.HTTP_400_BAD_REQUEST)
 
         comment = Comment.objects.create(user=request.user, post=post, text=text)
+
+        create_feed_notification(request.user, post, 'post_comment', f"{request.user.username} commented: {text[:30]}")
+
         return Response({"message": "Comment added", "comment": comment.text}, status=status.HTTP_201_CREATED)

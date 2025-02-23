@@ -131,3 +131,62 @@ class Achievement(BaseModel):
     class Meta:
         abstract = True
 
+
+
+###################################### Notification ##############################################
+
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.db import models
+
+class Notification(BaseModel):
+    NOTIFICATION_TYPES = (
+        ('join_request', 'Join Request'),
+        ('request_accepted', 'Request Accepted'),
+        ('request_rejected', 'Request Rejected'),
+        ('post_like', 'Post Like'),
+        ('post_comment', 'Post Comment'),
+        ('other', 'Other'),
+    )
+
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="notifications")
+    sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="sent_notifications")
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    
+    # Generic ForeignKey for any model
+    content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True)
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    def __str__(self):
+        return f"{self.recipient} - {self.notification_type} - {self.message[:30]}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+
+def create_feed_notification(user, instance, notification_type, message):
+    Notification.objects.create(
+        recipient=instance.user,  # Ensure `Post` model has `user`
+        sender=user,  # Changed `actor` to `sender`
+        notification_type=notification_type,  # Changed `verb` to `notification_type`
+        message=message,  # Added a meaningful message  
+        content_type=ContentType.objects.get_for_model(instance.__class__),  # Post model
+        object_id=instance.id
+    )
+
+
+def create_comment_notification(user, story):
+    Notification.objects.create(
+        recipient=story.user,  # Ensure `Story` model has `user`
+        sender=user,  # Changed `actor` to `sender`
+        notification_type='post_comment',  # Changed `verb` to `notification_type`
+        message=f"{user.username} commented on your story.",  # Added a meaningful message
+        content_type=ContentType.objects.get_for_model(story.__class__),  # Story model
+        object_id=story.id
+    )
+
+

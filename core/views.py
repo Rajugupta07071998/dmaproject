@@ -221,3 +221,35 @@ class AchievementDetailAPIView(APIView):
             {"message": "Achievement deleted successfully"},
             status=status.HTTP_204_NO_CONTENT
         )
+    
+
+
+
+    ################################### Notification #####################################
+
+class NotificationAPIView(APIView):
+    """API to get notifications for the logged-in user"""
+
+    def get(self, request):
+        notifications = Notification.objects.filter(recipient=request.user, is_read=False).order_by('-created_at')
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """Mark all notifications as read"""
+        Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
+        return Response({"message": "All notifications marked as read"}, status=status.HTTP_200_OK)
+    
+    def patch(self, request, notification_id):
+        """Mark a single notification as read"""
+        try:
+            notification = Notification.objects.get(id=notification_id, recipient=request.user)
+        except Notification.DoesNotExist:
+            return Response({"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if notification.is_read:
+            return Response({"message": "Notification already read"}, status=status.HTTP_200_OK)
+
+        notification.is_read = True
+        notification.save()
+        return Response({"message": "Notification marked as read"}, status=status.HTTP_200_OK)
