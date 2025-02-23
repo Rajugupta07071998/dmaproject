@@ -72,7 +72,8 @@ class BusinessInfo(BaseModel):
 
 
 
-class BusinessMembership(BaseModel):
+########################################### REQUESTS #############################################
+class BusinessMembership(BaseModel):  # second create from business account
     business = models.ForeignKey(BusinessInfo, on_delete=models.CASCADE, related_name="memberships")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="business_memberships")
     joined_at = models.DateTimeField(auto_now_add=True)
@@ -80,12 +81,9 @@ class BusinessMembership(BaseModel):
     def __str__(self):
         return f"{self.user.get_full_name()} -> {self.business.business_name}"
     
-    class Meta:
-        abstract = True
 
 
-
-class MembershipRequest(BaseModel):
+class MembershipRequest(BaseModel):  # First create request from user
     STATUS_CHOICES = (
         ('pending', 'Pending'),
         ('accepted', 'Accepted'),
@@ -112,11 +110,7 @@ class MembershipRequest(BaseModel):
     def __str__(self):
         return f"{self.user.get_full_name()} -> {self.business.business_name} ({self.get_status_display()})"
     
-    class Meta:
-        abstract = True
-
-
-
+    
 
 class Achievement(BaseModel):
     business = models.ForeignKey(BusinessInfo, related_name='achievements', on_delete=models.CASCADE)

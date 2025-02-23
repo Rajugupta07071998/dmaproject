@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PersonalInfo, BusinessInfo, Achievement, Notification
+from .models import PersonalInfo, BusinessInfo, Achievement, Notification, BusinessMembership, MembershipRequest
 from account.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -31,6 +31,26 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = BusinessInfo
         fields = '__all__'
+
+
+
+class MembershipRequestSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source='user.get_full_name', read_only=True)
+    business = serializers.CharField(source='business.business_name', read_only=True)
+
+    class Meta:
+        model = MembershipRequest
+        fields = ['id', 'user', 'business', 'status', 'created_at']
+
+
+class BusinessMembershipSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source='user.get_full_name', read_only=True)
+    business = serializers.CharField(source='business.business_name', read_only=True)
+
+    class Meta:
+        model = BusinessMembership
+        fields = ['id', 'user', 'business', 'joined_at']
+
 
 
 class AchievementSerializer(serializers.ModelSerializer):

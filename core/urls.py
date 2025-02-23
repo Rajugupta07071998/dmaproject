@@ -9,6 +9,13 @@ urlpatterns = [
     # Business Info
     path('business-info/', BusinessInfoAPIView.as_view(), name='business-info-create'),
     path('business-info/<pk>/', BusinessInfoAPIView.as_view(), name='business-info'),
+    path('business/search/', BusinessSearchView.as_view(), name='business-search'),
+    path('business/<business_id>/', BusinessDetailView.as_view(), name='business-detail'),
+
+    # Membership
+    path('business/join-request/', BusinessJoinRequestView.as_view(), name='business-join-request'),
+    path('business/approve-request/<request_id>/', ApproveMembershipRequestView.as_view(), name='approve-request'),
+    path('business/my-memberships/<user_id>/', MyBusinessMembershipsView.as_view(), name='my-memberships'),
     
     # Achievements
     path('achievements/', AchievementListCreateAPIView.as_view(), name='achievement-list-create'),

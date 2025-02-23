@@ -1,8 +1,10 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import PersonalInfo, BusinessInfo, Achievement
+from .models import PersonalInfo, BusinessInfo, Achievement, BusinessMembership, MembershipRequest
 from .serializers import *
+from django.db.models import Q
+
 
 
 def update_user_fields(user, data):
@@ -152,6 +154,103 @@ class BusinessInfoAPIView(APIView):
     #         return Response({"error": "Business Info not found"}, status=404)
 
 
+
+class BusinessSearchView(APIView):
+    def get(self, request):
+        query = request.GET.get("query", "")
+
+        if not query:
+            businesses = BusinessInfo.objects.all()
+        else:
+            businesses = BusinessInfo.objects.filter(
+                Q(business_name__icontains=query) | Q(business_type__icontains=query)
+            )
+
+        serializer = BusinessInfoSerializer(businesses, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BusinessDetailView(APIView):
+    def get(self, request, business_id):
+        try:
+            business = BusinessInfo.objects.get(id=business_id)
+        except BusinessInfo.DoesNotExist:
+            return Response({"error": "Business not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        serializer = BusinessInfoSerializer(business)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+
+########################## REQUESTS ##########################
+# User business join request send karega
+class BusinessJoinRequestView(APIView):
+    def post(self, request):
+        user_id = request.data.get("user_id")
+        business_id = request.data.get("business_id")
+
+        if not user_id or not business_id:
+            return Response({"error": "User ID and Business ID are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Objects fetch karo
+        try:
+            business = BusinessInfo.objects.get(id=business_id)
+        except BusinessInfo.DoesNotExist:
+            return Response({"error": "Business not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Agar user pehle se member hai
+        if BusinessMembership.objects.filter(user_id=user_id, business=business).exists():
+            return Response({"message": "User is already a member"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Pehle se request pending hai?
+        if MembershipRequest.objects.filter(user_id=user_id, business=business, status="pending").exists():
+            return Response({"message": "Request already pending"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Naya request create karo
+        membership_request = MembershipRequest.objects.create(user_id=user_id, business=business)
+        return Response({"message": "Request sent successfully"}, status=status.HTTP_201_CREATED)
+
+
+
+# Business Owner request accept/reject karega
+class ApproveMembershipRequestView(APIView):
+    def put(self, request, request_id):
+        action = request.data.get("action")  # "accept" or "reject"
+
+        # Membership request fetch karo
+        try:
+            membership_request = MembershipRequest.objects.get(id=request_id)
+        except MembershipRequest.DoesNotExist:
+            return Response({"error": "Membership request not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        if action == "accept":
+            membership_request.accept()
+            return Response({"message": "Request accepted successfully"}, status=status.HTTP_200_OK)
+
+        elif action == "reject":
+            membership_request.reject()
+            return Response({"message": "Request rejected"}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# User ke current business memberships dekhne ke liye
+class MyBusinessMembershipsView(APIView):
+    def get(self, request, user_id):
+        try:
+            memberships = BusinessMembership.objects.filter(user_id=user_id)
+            if not memberships.exists():
+                return Response({"message": "No memberships found"}, status=status.HTTP_404_NOT_FOUND)
+
+            serializer = BusinessMembershipSerializer(memberships, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
 class AchievementListCreateAPIView(APIView):
     """List and Create Achievements by User ID"""
     permission_classes = [permissions.IsAuthenticated]
@@ -225,7 +324,7 @@ class AchievementDetailAPIView(APIView):
 
 
 
-    ################################### Notification #####################################
+################## Notification ######################
 
 class NotificationAPIView(APIView):
     """API to get notifications for the logged-in user"""
