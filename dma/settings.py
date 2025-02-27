@@ -15,12 +15,12 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from .env file
+load_dotenv(f"{BASE_DIR}/.env", override=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -219,7 +219,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 # AWS setup for S3
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')  
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')  
-AWS_STORAGE_BUCKET_NAME = 'dma-media-content'
+AWS_STORAGE_BUCKET_NAME =  'dma-media-content'
 AWS_S3_REGION_NAME = 'us-east-1'  # E.g., 'us-east-1'
 
 # Media files will be uploaded to this location in the S3 bucket
