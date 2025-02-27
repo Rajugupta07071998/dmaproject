@@ -110,14 +110,27 @@ WSGI_APPLICATION = 'dma.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+PROD_DB = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'dmadb',  
+        'USER': 'dma',  
+        'PASSWORD': 'dma$neuralsift',  
+        'HOST': 'dmadb.cj2wsgqggrrn.us-east-1.rds.amazonaws.com', 
+        'PORT': '5432', 
+    }
+}
 
-DATABASES = {
+LOCAL_DB = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
+DATABASES = PROD_DB
+if DEBUG:
+    DATABASES = LOCAL_DB
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
