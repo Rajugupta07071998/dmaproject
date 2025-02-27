@@ -140,7 +140,7 @@ LOCAL_DB = {
 }
 
 
-DATABASES = LOCAL_DB
+DATABASES = PROD_DB
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
