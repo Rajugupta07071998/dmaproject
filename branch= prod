@@ -1,0 +1,6 @@
+branch= prod
+dev branch = raju
+
+
+
+git pull origin prod
