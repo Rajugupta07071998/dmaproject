@@ -95,7 +95,7 @@ class LikePostAPIView(APIView):
             like.delete()  # Unlike if already liked
             return Response({"message": "Unliked the post"}, status=status.HTTP_200_OK)
         
-        create_feed_notification(request.user, like, 'post_like', f"{request.user.username} liked your post.")
+        create_feed_notification(request.user, post, 'post_like', f"{request.user.username} liked your post.")
 
         return Response({"message": "Liked the post"}, status=status.HTTP_201_CREATED)
     

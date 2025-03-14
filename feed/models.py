@@ -6,6 +6,24 @@ from django.utils.timezone import now
 from datetime import timedelta
 from account.models import User
 from core.models import BaseModel
+from django.core.exceptions import ValidationError
+
+
+
+def validate_file_extension(value):
+    """ Validate if the uploaded file is an image or video based on extension """
+    image_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    video_extensions = ['mp4', 'avi', 'mov', 'mpeg', 'mkv']
+
+    ext = value.name.split('.')[-1].lower()  
+
+    if ext in image_extensions:
+        return 'image'
+    elif ext in video_extensions:
+        return 'video'
+    else:
+        raise ValidationError("Unsupported file format! Only images and videos are allowed.")
+
 
 class Post(BaseModel):
     """
@@ -17,10 +35,12 @@ class Post(BaseModel):
         on_delete=models.CASCADE,
         related_name="posts"  # A user can have multiple posts
     )
-    media = models.FileField(upload_to='Post/medias/')  # This will now upload to S3
+    media = models.FileField(upload_to='Post/medias/')  
     caption = models.TextField(blank=True, null=True)  # Caption text
     hashtags = models.CharField(max_length=500, blank=True, null=True)  # List of hashtags (stored as JSON)
     views_count = models.PositiveBigIntegerField(default=0)  # Number of views (scaled)
+    media_type = models.CharField(max_length=10, blank=True, null=True)
+    is_video = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
@@ -28,8 +48,14 @@ class Post(BaseModel):
             models.Index(fields=["-created_at"]),
         ]
 
+    def save(self, *args, **kwargs):
+        """ Auto-detect media type based on file extension before saving """
+        if self.media:
+            self.media_type = validate_file_extension(self.media)  # Determine type
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Post by {self.user.username}"
+        return f"Post by {self.user.username} ({self.media_type})"
 
 
 class Story(BaseModel):
@@ -41,9 +67,11 @@ class Story(BaseModel):
         on_delete=models.CASCADE,
         related_name="stories"  # A user can have multiple stories
     )
-    media_url = models.URLField()  # URL of the story image/video
+    media = models.FileField(upload_to='Story/medias/')   # URL of the story image/video
     caption = models.CharField(max_length=255, blank=True, null=True)  # Optional caption
     expires_at = models.DateTimeField(default=lambda: now() + timedelta(hours=24))  # Auto expires in 24 hrs
+    media_type = models.CharField(max_length=10, blank=True, null=True)
+    is_video = models.BooleanField(default=False)
 
     class Meta:
         indexes = [
@@ -51,6 +79,12 @@ class Story(BaseModel):
             models.Index(fields=["-created_at"]),
         ]
         abstract = True
+    
+    def save(self, *args, **kwargs):
+        """ Auto-detect media type based on file extension before saving """
+        if self.media:
+            self.media_type = validate_file_extension(self.media)  # Determine type
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Story by {self.user.username}"

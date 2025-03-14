@@ -24,4 +24,7 @@ urlpatterns = [
     # Notification
     path('notifications/', NotificationAPIView.as_view(), name='notifications'),
     path('notifications/<notification_id>/read/', NotificationAPIView.as_view(), name='notification-read'),
+
+    path('equipment/', EquipmentMasterAPIView.as_view(), name='equipment-list'),
+    path('equipment/<equipment_id>/', EquipmentMasterAPIView.as_view(), name='equipment-detail'),
 ]

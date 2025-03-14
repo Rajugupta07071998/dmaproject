@@ -115,19 +115,16 @@ class MembershipRequest(BaseModel):  # First create request from user
 class Achievement(BaseModel):
     business = models.ForeignKey(BusinessInfo, related_name='achievements', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     date_awarded = models.DateField(null=True, blank=True)
     image = models.ImageField(upload_to='Achievement/images/', null=True, blank=True)
+    achievement_link = models.URLField(max_length=500, null=True, blank=True)  
+
 
     def __str__(self):
         return f'{self.business.business_name} - {self.title}'
     
-    class Meta:
-        abstract = True
 
-
-
-###################################### Notification ##############################################
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -151,7 +148,7 @@ class Notification(BaseModel):
     
     # Generic ForeignKey for any model
     content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True)
-    object_id = models.PositiveIntegerField(null=True, blank=True)
+    object_id = models.CharField(null=True, blank=True)
     content_object = GenericForeignKey('content_type', 'object_id')
 
     def __str__(self):
@@ -184,3 +181,28 @@ def create_comment_notification(user, story):
     )
 
 
+
+
+class EquipmentMaster(BaseModel):
+    """
+    Model to store equipment details.
+    
+    Attributes:
+        - `name` (CharField): Name of the equipment.
+        - `description` (TextField): Description of the equipment.
+        - `no_of_equipment` (IntegerField): Total number of equipment available.
+        - `is_system` (BooleanField): Indicates if the equipment is a system-related item.
+        - `image` (ImageField): Equipment image.
+    """
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True, null=True)
+    no_of_equipment = models.IntegerField(default=0)
+    is_system = models.BooleanField(default=False)  
+    image = models.ImageField(upload_to="EquipmentMaster/equipment_images/", blank=True, null=True)
+
+    created_by = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="equipment_master", blank=True, null=True
+    )  
+
+    def __str__(self):
+        return self.name

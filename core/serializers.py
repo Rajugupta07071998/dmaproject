@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PersonalInfo, BusinessInfo, Achievement, Notification, BusinessMembership, MembershipRequest
+from .models import PersonalInfo, BusinessInfo, Achievement, Notification, BusinessMembership, MembershipRequest, EquipmentMaster
 from account.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -67,3 +67,12 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = ['id', 'sender', 'notification_type', 'message', 'is_read', 'created_at']
 
+
+
+
+class EquipmentMasterSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False)  
+
+    class Meta:
+        model = EquipmentMaster
+        fields = '__all__'

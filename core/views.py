@@ -4,6 +4,9 @@ from rest_framework.response import Response
 from .models import PersonalInfo, BusinessInfo, Achievement, BusinessMembership, MembershipRequest
 from .serializers import *
 from django.db.models import Q
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+
 
 
 
@@ -352,3 +355,69 @@ class NotificationAPIView(APIView):
         notification.is_read = True
         notification.save()
         return Response({"message": "Notification marked as read"}, status=status.HTTP_200_OK)
+    
+
+
+
+class EquipmentMasterAPIView(APIView):
+    """
+    API View to handle Equipment Master CRUD operations.
+    """
+    parser_classes = (MultiPartParser, FormParser)  
+    permission_classes = [IsAuthenticated]  
+
+    def get(self, request, equipment_id=None):
+        """
+        Retrieve all equipment or a specific equipment by ID.
+        """
+        if equipment_id:
+            try:
+                equipment = EquipmentMaster.objects.get(id=equipment_id)
+                serializer = EquipmentMasterSerializer(equipment)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except EquipmentMaster.DoesNotExist:
+                return Response({"error": "Equipment not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        equipments = EquipmentMaster.objects.all()
+        serializer = EquipmentMasterSerializer(equipments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """
+        Create a new equipment entry with `created_by` set to the logged-in user.
+        """
+        data = request.data.copy()  # Copy data to modify it
+        data["created_by"] = request.user.id  # Assign logged-in user
+
+        serializer = EquipmentMasterSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, equipment_id):
+        """
+        Update an existing equipment entry.
+        """
+        try:
+            equipment = EquipmentMaster.objects.get(id=equipment_id)
+        except EquipmentMaster.DoesNotExist:
+            return Response({"error": "Equipment not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = EquipmentMasterSerializer(equipment, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, equipment_id):
+        """
+        Delete an equipment entry.
+        """
+        try:
+            equipment = EquipmentMaster.objects.get(id=equipment_id)
+        except EquipmentMaster.DoesNotExist:
+            return Response({"error": "Equipment not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        equipment.delete()
+        return Response({"message": "Equipment deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
