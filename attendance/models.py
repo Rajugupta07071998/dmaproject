@@ -64,6 +64,7 @@ class SubTask(BaseModel):
     )
     day = models.CharField(max_length=10, choices=DAY_CHOICES)
     task_name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
     duration_minutes = models.IntegerField(default=30)  # Default 30 min per task
 
     is_system = models.BooleanField(default=False)
@@ -89,6 +90,7 @@ class Batch(BaseModel):
     """
 
     name = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     weekly_plan = models.ForeignKey(
         WeeklyPlan, on_delete=models.CASCADE, related_name="batches", blank=True, null=True
     )
@@ -124,6 +126,8 @@ class MasterPolicy(BaseModel):
         - `batch` (ForeignKey): Links the policy to a Batch.
     """
 
+    name = models.CharField(max_length=255, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     batch = models.ForeignKey(
         Batch, on_delete=models.CASCADE, related_name="batch_policies", blank=True, null=True
     )
