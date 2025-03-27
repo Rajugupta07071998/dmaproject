@@ -421,3 +421,72 @@ class EquipmentMasterAPIView(APIView):
 
         equipment.delete()
         return Response({"message": "Equipment deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+    
+
+
+
+
+# Business Owner Ke Members List API
+class BusinessMembersListView(APIView):
+    """
+    Retrieves the list of members in a business.
+
+    - Only the **business owner** is allowed to view members.
+    - Returns a list of users who have joined the business.
+    """
+    def get(self, request, business_id):
+        try:
+            business = BusinessInfo.objects.get(id=business_id)
+        except BusinessInfo.DoesNotExist:
+            return Response({"error": "Business not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Business owner wahi hona chahiye jo business ka owner hai
+        if request.user != business.user:
+            return Response({"error": "You are not authorized to view this business's members"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Business ke saare members fetch karein
+        members = BusinessMembership.objects.filter(business=business)
+        total_members = members.count()
+        serializer = BusinessMemberSerializer(members, many=True)
+
+        return Response({
+            #"total_members": total_members,
+            "members": serializer.data
+        }, status=status.HTTP_200_OK)
+
+
+
+# Joined User Details API
+class UserDetailsView(APIView):
+    """
+    Retrieves the details of a specific user.
+
+    - Includes user information along with joined businesses.
+    - Handles error if user does not exist.
+    """
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = UserDetailSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UpdatePrivacyAPIView(APIView):
+    """
+    Allows users to update their account privacy settings.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+        is_private = request.data.get("is_private")
+
+        if is_private is not None:
+            user.is_private = bool(is_private)
+            user.save()
+            return Response({"message": "Privacy setting updated.", "is_private": user.is_private}, status=status.HTTP_200_OK)
+
+        return Response({"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST)

@@ -25,6 +25,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     mobile_number = models.CharField(max_length=15, unique=True)
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
+    is_private = models.BooleanField(default=False)
 
      # Lazy Reference से Circular Import Fix
     master_policy = models.ForeignKey(

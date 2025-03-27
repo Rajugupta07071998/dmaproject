@@ -22,7 +22,11 @@ class PersonalInfo(BaseModel):
         ('other', 'Other'),
     )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="personalinfo"  # Reverse query: user.personalinfo
+    )
     profile_pic = models.ImageField(upload_to='PersonalInfo/profile_pics/', null=True, blank=True)
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
     location = models.CharField(max_length=255, null=True, blank=True)
@@ -54,7 +58,11 @@ class BusinessInfo(BaseModel):
         ('other', 'Other'),
     )
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name="businessinfo"  # Reverse query: user.businessinfo
+    )
     business_type = models.CharField(max_length=30, choices=BUSINESS_TYPE_CHOICES, null=True, blank=True)
     business_owner = models.CharField(max_length=100, blank=True)
     business_name = models.CharField(max_length=255, blank=True)

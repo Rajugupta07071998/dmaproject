@@ -27,4 +27,8 @@ urlpatterns = [
 
     path('equipment/', EquipmentMasterAPIView.as_view(), name='equipment-list'),
     path('equipment/<equipment_id>/', EquipmentMasterAPIView.as_view(), name='equipment-detail'),
+
+    path('business/members/<business_id>/', BusinessMembersListView.as_view(), name='business-members'),
+    path('user/details/<user_id>/', UserDetailsView.as_view(), name='user-details'),
+    path("update-privacy/", UpdatePrivacyAPIView.as_view(), name="update-privacy"),
 ]

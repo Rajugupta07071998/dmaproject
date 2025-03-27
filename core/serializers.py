@@ -76,3 +76,37 @@ class EquipmentMasterSerializer(serializers.ModelSerializer):
     class Meta:
         model = EquipmentMaster
         fields = '__all__'
+
+
+
+
+# Business Members List Serializer
+class BusinessMemberSerializer(serializers.ModelSerializer):
+    user_id = serializers.UUIDField(source='user.id', read_only=True)
+    user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    joined_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+
+    class Meta:
+        model = BusinessMembership
+        fields = ['user_id', 'user_name', 'joined_at']
+
+
+# User Details Serializer by click user from list of user
+class UserDetailSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+    joined_businesses = serializers.SerializerMethodField()
+    personal_info = PersonalInfoSerializer(source='user.personalinfo', read_only=True)  
+
+    class Meta:
+        model = User
+        fields = ['id', 'full_name', 'email', 'mobile_number', 'user_type', 'personal_info', 'joined_businesses']
+
+    def get_joined_businesses(self, obj):
+        """Fetches the list of businesses the user has joined"""
+        return [
+            {
+                "business_id": membership.business.id,
+                "business_name": membership.business.business_name
+            }
+            for membership in obj.business_memberships.all()
+        ]

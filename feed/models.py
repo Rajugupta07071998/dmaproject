@@ -167,3 +167,27 @@ class Follower(models.Model):
 
 
 
+class ChatRoom(BaseModel):
+    """
+    A chat room between two users.
+    """
+    user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chats_as_user1")
+    user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chats_as_user2")
+    class Meta:
+        unique_together = ("user1", "user2")
+
+    def __str__(self):
+        return f"Chat: {self.user1.username} & {self.user2.username}"
+
+class Message(BaseModel):
+    """
+    A message sent between two users in a chat room.
+    """
+    chat_room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.content[:20]}"
+

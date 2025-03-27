@@ -4,7 +4,8 @@ from .views import (
     SubTaskAPIView, SubTaskDetailAPIView,
     BatchAPIView, BatchDetailAPIView,
     MasterPolicyAPIView, MasterPolicyDetailAPIView, 
-    BatchAttendanceAPIView
+    BatchAttendanceAPIView, AssignBatchAPIView,
+    BatchWiseMembersAPIView, AttendanceReportAPIView
 )
 
 urlpatterns = [
@@ -22,5 +23,8 @@ urlpatterns = [
     path('master-policies/<pk>/', MasterPolicyDetailAPIView.as_view(), name='master-policy-detail'),
     #path('attendance/<pk>/', AttendanceDetailAPIView.as_view(), name='attendance-detail'),
     path('batch/<batch_id>/attendance/', BatchAttendanceAPIView.as_view(), name='batch-attendance'),
+    path("assign-batch/<user_id>/<batch_id>/", AssignBatchAPIView.as_view(), name="assign_batch"),
+    path('batch-members/<batch_id>/', BatchWiseMembersAPIView.as_view(), name='batch-wise-members'),
+    path('attendance-report/', AttendanceReportAPIView.as_view(), name='attendance-report'),
 
 ]
