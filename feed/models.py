@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 def validate_file_extension(value):
     """ Validate if the uploaded file is an image or video based on extension """
     image_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
-    video_extensions = ['mp4', 'avi', 'mov', 'mpeg', 'mkv']
+    video_extensions = ['mp4', 'avi', 'mov', 'mpeg', 'mkv', 'webm']
 
     ext = value.name.split('.')[-1].lower()  
 
@@ -38,9 +38,13 @@ class Post(BaseModel):
     media = models.FileField(upload_to='Post/medias/')  
     caption = models.TextField(blank=True, null=True)  # Caption text
     hashtags = models.CharField(max_length=500, blank=True, null=True)  # List of hashtags (stored as JSON)
-    views_count = models.PositiveBigIntegerField(default=0)  # Number of views (scaled)
+    views_count = models.PositiveBigIntegerField(default=0)  
     media_type = models.CharField(max_length=10, blank=True, null=True)
     is_video = models.BooleanField(default=False)
+    extension = models.CharField(max_length=10, blank=True, null=True)  
+    duration = models.FloatField(blank=True, null=True)  
+    category = models.CharField(max_length=50, blank=True, null=True)
+    video_size = models.FloatField(blank=True, null=True)
 
     class Meta:
         indexes = [
