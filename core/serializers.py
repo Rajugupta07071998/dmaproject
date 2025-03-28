@@ -85,10 +85,12 @@ class BusinessMemberSerializer(serializers.ModelSerializer):
     user_id = serializers.UUIDField(source='user.id', read_only=True)
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
     joined_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+    #user = UserSerializer(read_only=True)
+    personal_info = PersonalInfoSerializer(source='user.personalinfo', read_only=True) 
 
     class Meta:
         model = BusinessMembership
-        fields = ['user_id', 'user_name', 'joined_at']
+        fields = ['user_id', 'user_name', 'joined_at', 'personal_info']
 
 
 # User Details Serializer by click user from list of user
