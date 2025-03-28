@@ -4,6 +4,8 @@ from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 
+from core import serializers
+
 from .models import WeeklyPlan, SubTask, Batch, MasterPolicy, Attendance
 from .serializers import (
     WeeklyPlanSerializer, SubTaskSerializer, BatchSerializer,
@@ -12,6 +14,7 @@ from .serializers import (
 from account.models import User
 from core.models import BusinessMembership
 from datetime import datetime
+from core.serializers import UserFullDataSerializer
 
 
 
@@ -474,12 +477,13 @@ class BatchWiseMembersAPIView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        data = [
-            {"id": str(member.id), "name": member.get_full_name(), "user_type": member.user_type}
-            for member in members
-        ]
+        # data = [
+        #     {"id": str(member.id), "name": member.get_full_name(), "user_type": member.user_type}
+        #     for member in members
+        # ]
+        serializer = UserFullDataSerializer(members, many=True)
 
-        return Response(data, status=status.HTTP_200_OK)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
 
 

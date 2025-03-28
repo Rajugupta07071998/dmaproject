@@ -112,3 +112,12 @@ class UserDetailSerializer(serializers.ModelSerializer):
             }
             for membership in obj.business_memberships.all()
         ]
+    
+
+class UserFullDataSerializer(serializers.ModelSerializer):
+    personal_info = PersonalInfoSerializer(source='personalinfo', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'mobile_number', 'user_type', 'master_policy', 
+                  'batch_policy', 'first_name', 'last_name', 'username', 'personal_info']
