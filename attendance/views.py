@@ -13,7 +13,7 @@ from .serializers import (
 )
 from account.models import User
 from core.models import BusinessMembership
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from core.serializers import UserFullDataSerializer
 
 
@@ -318,70 +318,205 @@ class BatchAttendanceAPIView(APIView):
             return Response({"error": "Batch not found or unauthorized access"}, status=status.HTTP_404_NOT_FOUND)
 
     def post(self, request, batch_id):
-        """
-        Mark attendance for selected users in a batch.
-        - Ensures users belong to the batch before marking attendance.
-        - Prevents duplicate attendance entries.
-        - Allows bulk attendance marking.
-
-        POST /batch/{batch_id}/attendance/
-        Marks attendance for selected users.
-        Prevents duplicate entries.
-        """
+        """Mark attendance for selected users in a batch, with weekend handling."""
         try:
-            batch = Batch.objects.get(id=batch_id, created_by=request.user)  # Only batch creator can mark attendance
+            batch = Batch.objects.get(id=batch_id, created_by=request.user)  # Only batch creator can mark
             data = request.data
+            present_user_ids = set(data.get("present_user_ids", []))
+            date_str = data.get("date")
 
-            user_ids = data.get("user_ids", [])
-            date = data.get("date")
-            status_value = data.get("status", "present")  # Default status = "present"
+            if not date_str:
+                return Response({"error": "Date is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-            if not user_ids or not date:
-                return Response({"error": "user_ids and date are required"}, status=status.HTTP_400_BAD_REQUEST)
+            # Convert date string to datetime object
+            date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+            day_of_week = date.strftime("%A").lower()  # e.g., "monday", "saturday"
+
+            # Get all users in this batch
+            users_in_batch = User.objects.filter(batch_policy=batch)
+            all_user_ids = set(users_in_batch.values_list("id", flat=True))
+
+            absent_user_ids = all_user_ids - present_user_ids  # Unselected users = Absent
+            weekend_user_ids = set()  # Users who will be marked "Holiday" on weekends
 
             attendance_entries = []
             already_marked = []
 
-            for user_id in user_ids:
+            # Check if it's a weekend
+            if day_of_week in ["saturday", "sunday"]:
+                status_value = "holiday"
+                weekend_user_ids = all_user_ids  # Mark all users as "Holiday"
+            else:
+                status_value = "present"  # Default status for selected users
+
+            # Mark attendance for users
+            for user in users_in_batch:
+                user_status = (
+                    "holiday" if user.id in weekend_user_ids else
+                    "present" if user.id in present_user_ids else
+                    "absent"
+                )
+
                 try:
-                    user = User.objects.get(id=user_id)
-
-                    # Ensure user belongs to this batch
-                    if not batch.weekly_plan or user not in batch.weekly_plan.batches.all():
-                        return Response({"error": f"User {user_id} is not part of Batch {batch_id}"},
-                                        status=status.HTTP_400_BAD_REQUEST)
-
-                    # Check for duplicate attendance
-                    if Attendance.objects.filter(batch=batch, user=user, date=date).exists():
-                        already_marked.append(user_id)
+                    # Check if attendance already exists
+                    if Attendance.objects.get(batch=batch, user=user, date=date):
+                        already_marked.append(user.id)
                         continue  # Skip already marked users
-                    
-                    attendance_entry = Attendance(
+                except Attendance.DoesNotExist:
+                    # Create new attendance entry
+                    attendance_entries.append(Attendance(
                         batch=batch,
                         user=user,
                         date=date,
                         status=status_value,
                         created_by=request.user
-                    )
-                    attendance_entries.append(attendance_entry)
-                except User.DoesNotExist:
-                    return Response({"error": f"User {user_id} not found"}, status=status.HTTP_400_BAD_REQUEST)
+                    ))
 
-            # Bulk create new attendance records
+            # Bulk insert attendance records
             Attendance.objects.bulk_create(attendance_entries)
 
-            response_data = {"message": "Attendance marked successfully"}
-            if already_marked:
-                response_data["skipped_users"] = already_marked  # Users whose attendance was already marked
-            
-            return Response(response_data, status=status.HTTP_201_CREATED)
+            return Response({
+                "message": "Attendance marked successfully",
+                "present_users": list(present_user_ids),
+                "absent_users": list(absent_user_ids),
+                "weekend_users": list(weekend_user_ids),
+                "skipped_users": already_marked  # Users already marked earlier
+            }, status=status.HTTP_201_CREATED)
+
+        except Batch.DoesNotExist:
+            return Response({"error": "Batch not found or unauthorized access"}, status=status.HTTP_404_NOT_FOUND)
+        
+    
+    def patch(self, request, batch_id):
+        try:
+            batch = Batch.objects.get(id=batch_id, created_by=request.user)  # Only batch creator can update
+            data = request.data
+            date_str = data.get("date")
+            updates = data.get("updates", [])
+
+            if not date_str or not updates:
+                return Response({"error": "Date and updates are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Convert date string to datetime object
+            date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
+
+            updated_entries = []
+
+            for entry in updates:
+                user_id = entry.get("user_id")
+                new_status = entry.get("status")
+
+                try:
+                    user = User.objects.get(id=user_id)
+
+                    # Ensure user belongs to this batch
+                    if user.batch_policy != batch:
+                        return Response({"error": f"User {user_id} is not part of Batch {batch_id}"},
+                                        status=status.HTTP_400_BAD_REQUEST)
+
+                    # Update attendance
+                    attendance = Attendance.objects.get(batch=batch, user=user, date=date)
+                    attendance.status = new_status
+                    attendance.save()
+
+                    updated_entries.append({"user_id": user_id, "status": new_status})
+
+                except (User.DoesNotExist, Attendance.DoesNotExist):
+                    return Response({"error": f"User {user_id} or attendance not found"}, status=status.HTTP_400_BAD_REQUEST)
+
+            return Response({"message": "Attendance updated successfully", "updated_users": updated_entries},
+                            status=status.HTTP_200_OK)
+
+        except Batch.DoesNotExist:
+            return Response({"error": "Batch not found or unauthorized access"}, status=status.HTTP_404_NOT_FOUND)
+        
+
+
+class AttendanceLogsAPIView(APIView):
+    """
+    API to fetch last two days' attendance logs for a batch.
+    
+    - Only the batch creator (business user) can view logs.
+    - Logs are sorted by latest first.
+    - Includes day name (Monday, Tuesday, etc.).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, batch_id):
+        """Retrieve attendance logs for the last two days with day name."""
+        try:
+            batch = Batch.objects.get(id=batch_id, created_by=request.user)  # Only batch creator can view
+
+            # Calculate date range for the last two days using datetime module
+            today = date.today()  
+            two_days_ago = today - timedelta(days=2)
+
+            # Fetch attendance logs in descending order
+            attendance_logs = Attendance.objects.filter(
+                batch=batch,
+                created_by=request.user,
+                date__gte=two_days_ago
+            ).order_by("-date")  
+
+            log_list = [
+                {
+                    "user": log.user.get_full_name(),
+                    "date": str(log.date),  
+                    "day": log.date.strftime("%A"),  
+                    "status": log.status
+                }
+                for log in attendance_logs
+            ]
+
+            return Response({
+                "batch_id": batch.id,
+                "batch_name": batch.name,
+                "attendance_logs": log_list
+            }, status=status.HTTP_200_OK)
 
         except Batch.DoesNotExist:
             return Response({"error": "Batch not found or unauthorized access"}, status=status.HTTP_404_NOT_FOUND)
 
 
 
+class UserAttendanceAPIView(APIView):
+    """
+    API to fetch all attendance records of a single user.
+    
+    - `GET /attendance/user/{user_id}/`  
+    - Returns all attendance records of the user.
+    """
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request, user_id):
+        """
+        Fetch attendance records of a specific user.
+        Only the business user who created the batch can access.
+        """
+        try:
+            user = User.objects.get(id=user_id)
+            
+            # Fetch attendance sorted by latest date first
+            attendance_records = Attendance.objects.filter(user=user).order_by('-date')
+
+            attendance_data = [
+                {
+                    "date": record.date.strftime("%Y-%m-%d"),
+                    "day": record.date.strftime("%A"),  
+                    "status": record.status
+                }
+                for record in attendance_records
+            ]
+
+            return Response({
+                "user": user.get_full_name(),
+                "attendance": attendance_data
+            }, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+        
 
 class AssignBatchAPIView(APIView):
     """

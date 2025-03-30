@@ -5,7 +5,8 @@ from .views import (
     BatchAPIView, BatchDetailAPIView,
     MasterPolicyAPIView, MasterPolicyDetailAPIView, 
     BatchAttendanceAPIView, AssignBatchAPIView,
-    BatchWiseMembersAPIView, AttendanceReportAPIView
+    BatchWiseMembersAPIView, AttendanceReportAPIView,
+    UserAttendanceAPIView, AttendanceLogsAPIView
 )
 
 urlpatterns = [
@@ -26,5 +27,9 @@ urlpatterns = [
     path("assign-batch/<user_id>/<batch_id>/", AssignBatchAPIView.as_view(), name="assign_batch"),
     path('batch-members/<batch_id>/', BatchWiseMembersAPIView.as_view(), name='batch-wise-members'),
     path('attendance-report/', AttendanceReportAPIView.as_view(), name='attendance-report'),
+    path('attendance/user/<user_id>/', UserAttendanceAPIView.as_view(), name='user-attendance'),
+    path('batch/<batch_id>/attendance/logs/', AttendanceLogsAPIView.as_view(), name='attendance-logs'), # last 2 
+
+
 
 ]
