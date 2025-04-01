@@ -241,4 +241,4 @@ class UserActivity(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.user} - {self.ip_address} - {self.timestamp}"
+        return f"{self.user} - {self.ip_address} - {self.created_at}"
