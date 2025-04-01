@@ -214,3 +214,31 @@ class EquipmentMaster(BaseModel):
 
     def __str__(self):
         return self.name
+
+
+
+
+class UserActivity(BaseModel):
+    """
+    Tracks user activity details such as IP address, location, device type, OS, browser, and user agent.
+    It also stores optional latitude/longitude for geolocation and timestamps for activity records.
+    """
+    
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    ip_address = models.CharField(max_length=45, null=True, blank=True)
+    latitude = models.DecimalField(max_digits=15, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=15, decimal_places=6, null=True, blank=True)
+    location = models.CharField(max_length=255, null=True, blank=True)  # Full address
+
+    device_type = models.CharField(max_length=50, null=True, blank=True)  # Mobile, Tablet, Desktop
+    os = models.CharField(max_length=50, null=True, blank=True)  # Windows, macOS, Android, iOS
+    browser = models.CharField(max_length=50, null=True, blank=True)  # Chrome, Firefox, Safari
+    user_agent = models.TextField(null=True, blank=True)
+    class Meta:
+        indexes = [
+            models.Index(fields=['ip_address']),
+            models.Index(fields=['user']),
+        ]
+
+    def __str__(self):
+        return f"{self.user} - {self.ip_address} - {self.timestamp}"

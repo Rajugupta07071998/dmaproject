@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PersonalInfo, BusinessInfo, Achievement, Notification, BusinessMembership, MembershipRequest, EquipmentMaster
+from .models import PersonalInfo, BusinessInfo, Achievement, Notification, BusinessMembership, MembershipRequest, EquipmentMaster, UserActivity
 from account.models import User
 
 class UserSerializer(serializers.ModelSerializer):
@@ -121,3 +121,10 @@ class UserFullDataSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email', 'mobile_number', 'user_type', 'master_policy', 
                   'batch_policy', 'first_name', 'last_name', 'username', 'personal_info']
+        
+
+
+class UserActivitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserActivity
+        fields = '__all__'  # Include all fields

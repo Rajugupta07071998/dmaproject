@@ -1,7 +1,7 @@
 from django.contrib import admin
 from core.models import (
     PersonalInfo, BusinessInfo, MembershipRequest, BusinessMembership, 
-    Notification, EquipmentMaster, Achievement
+    Notification, EquipmentMaster, Achievement, UserActivity
 )
 
 # **PersonalInfo Admin Panel**
@@ -72,3 +72,16 @@ class AchievementAdmin(admin.ModelAdmin):
     search_fields = ("title", "business__business_name")  
     list_filter = ("date_awarded",)  
     ordering = ("-date_awarded",)  
+
+
+@admin.register(UserActivity)
+class UserActivityAdmin(admin.ModelAdmin):
+    """
+    Admin panel configuration for UserActivity model.
+    Displays key fields and enables search & filtering.
+    """
+
+    list_display = ('user', 'ip_address', 'location', 'device_type', 'os', 'browser', 'created_at')
+    search_fields = ('user__username', 'ip_address', 'location', 'device_type', 'os', 'browser')
+    list_filter = ('device_type', 'os', 'browser', 'created_at')
+    ordering = ('-created_at',)

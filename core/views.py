@@ -490,3 +490,36 @@ class UpdatePrivacyAPIView(APIView):
             return Response({"message": "Privacy setting updated.", "is_private": user.is_private}, status=status.HTTP_200_OK)
 
         return Response({"error": "Invalid request."}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+
+class UserActivityAPIView(APIView):
+    
+    def get(self, request, user_id):
+        """ Get user activity based on user_id """
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        activities = UserActivity.objects.filter(user=user)
+        serializer = UserActivitySerializer(activities, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, user_id):
+        """ Create a new activity for a specific user """
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Create a mutable copy of request data
+        data = request.data.copy()
+        data['user'] = user.id  
+
+        serializer = UserActivitySerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

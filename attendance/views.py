@@ -368,7 +368,7 @@ class BatchAttendanceAPIView(APIView):
                         batch=batch,
                         user=user,
                         date=date,
-                        status=status_value,
+                        status=user_status,
                         created_by=request.user
                     ))
 
