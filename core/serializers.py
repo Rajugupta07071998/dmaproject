@@ -59,6 +59,46 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
         model = BusinessInfo
         fields = '__all__'
 
+    def validate_business_phone(self, value):
+        """Validate business phone number format"""
+        if len(value) < 10 or len(value) > 12:
+            raise serializers.ValidationError("Phone number must be between 10 to 12 digits.")
+        return value
+
+    def validate_business_email(self, value):
+        """Validate business email format"""
+        if value and not value.endswith((".com", ".net", ".org")):
+            raise serializers.ValidationError("Please enter a valid email address.")
+        return value
+    
+    def validate_business_owner(self, value):
+        if not value:
+            raise serializers.ValidationError("Business owner name is required.")
+        return value
+
+    # def validate_established_year(self, value):
+    #     """Validate that established year is not in the future"""
+    #     from datetime import datetime
+    #     current_year = datetime.now().year
+    #     if value and (value < 1800 or value > current_year):
+    #         raise serializers.ValidationError(f"Year must be between 1800 and {current_year}.")
+    #     return value
+
+    def validate(self, data):
+        """Custom validation for required fields"""
+        if not data.get("business_name"):
+            raise serializers.ValidationError({"business_name": "Business name is required."})
+        if not data.get("business_address"):
+            raise serializers.ValidationError({"business_address": "Business address is required."})
+        if not data.get("main_category"):
+            raise serializers.ValidationError({"main_category": "Main category is required."})
+        if not data.get("sub_category"):
+            raise serializers.ValidationError({"sub_category": "Sub-category is required."})
+        if not data.get("sub_sub_category"):
+            raise serializers.ValidationError({"sub_sub_category": "Sub-sub-category is required."})
+
+        return data
+
 
 
 class MembershipRequestSerializer(serializers.ModelSerializer):

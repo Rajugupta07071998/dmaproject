@@ -37,18 +37,8 @@ class SubSubCategoryAdmin(admin.ModelAdmin):
 # **BusinessInfo Admin Panel**
 @admin.register(BusinessInfo)
 class BusinessInfoAdmin(admin.ModelAdmin):
-    list_display = (
-        "user", "business_name", "main_category", "sub_category", "sub_sub_category", "business_phone"
-    )
-    list_filter = ("main_category", "sub_category", "sub_sub_category")
-    search_fields = ("business_name", "user__username", "business_phone")
-
-    fieldsets = (
-        ("Business Owner", {"fields": ("user",)}),
-        ("Category Details", {"fields": ("main_category", "sub_category", "sub_sub_category")}),
-        ("Business Details", {"fields": ("business_name", "business_about", "business_description")}),
-        ("Contact Information", {"fields": ("business_address", "business_phone", "business_website")}),
-    )
+    list_display = ('id', 'user', 'business_name', 'business_type')  # Fields to show in the list
+    search_fields = ('business_name', 'user__username') 
 
 
 # **MembershipRequest Admin Panel**
