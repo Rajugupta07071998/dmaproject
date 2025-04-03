@@ -37,6 +37,34 @@ class PersonalInfo(BaseModel):
 
 
 
+
+class MainCategory(BaseModel):
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True, help_text="Description about the main category")
+
+    def __str__(self):
+        return self.name
+
+
+class SubCategory(BaseModel):
+    main_category = models.ForeignKey(MainCategory, on_delete=models.CASCADE, related_name="subcategories")
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True, help_text="Description about the subcategory")
+
+    def __str__(self):
+        return f"{self.main_category.name} -> {self.name}"
+
+
+class SubSubCategory(BaseModel):
+    sub_category = models.ForeignKey(SubCategory, on_delete=models.CASCADE, related_name="subsubcategories")
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(null=True, blank=True, help_text="Description about the sub-subcategory")
+
+    def __str__(self):
+        return f"{self.sub_category.main_category.name} -> {self.sub_category.name} -> {self.name}"
+    
+
+
 class BusinessInfo(BaseModel):
     BUSINESS_TYPE_CHOICES = (
         ('music_academy', 'Music Academy'),
@@ -64,6 +92,15 @@ class BusinessInfo(BaseModel):
         related_name="businessinfo"  # Reverse query: user.businessinfo
     )
     business_type = models.CharField(max_length=30, choices=BUSINESS_TYPE_CHOICES, null=True, blank=True)
+    main_category = models.ForeignKey(
+        "MainCategory", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    sub_category = models.ForeignKey(
+        "SubCategory", on_delete=models.SET_NULL, null=True, blank=True
+    )
+    sub_sub_category = models.ForeignKey(
+        "SubSubCategory", on_delete=models.SET_NULL, null=True, blank=True
+    )
     business_owner = models.CharField(max_length=100, blank=True)
     business_name = models.CharField(max_length=255, blank=True)
     business_about = models.TextField(null=True, blank=True, help_text="Short description about the business")

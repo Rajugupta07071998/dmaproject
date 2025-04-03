@@ -1,6 +1,13 @@
 from rest_framework import serializers
-from .models import PersonalInfo, BusinessInfo, Achievement, Notification, BusinessMembership, MembershipRequest, EquipmentMaster, UserActivity
+from .models import (
+    PersonalInfo, BusinessInfo, Achievement, Notification,
+    BusinessMembership, MembershipRequest, EquipmentMaster, UserActivity,
+    MainCategory, SubCategory, SubSubCategory
+)
 from account.models import User
+
+
+
 
 class UserSerializer(serializers.ModelSerializer):
     """Read-only serializer for User model (only for response)"""
@@ -24,6 +31,26 @@ class PersonalUserInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonalInfo
         fields = ["id", "user", "profile_pic", "gender", "location", "bio"]
+
+
+
+class MainCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MainCategory
+        fields = ['id', 'name', 'description']
+
+
+class SubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubCategory
+        fields = ['id', 'name', 'description', 'main_category']
+
+
+class SubSubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SubSubCategory
+        fields = ['id', 'name', 'description', 'sub_category']
+
 
 
 class BusinessInfoSerializer(serializers.ModelSerializer):

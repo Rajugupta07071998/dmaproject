@@ -1,7 +1,8 @@
 from django.contrib import admin
 from core.models import (
     PersonalInfo, BusinessInfo, MembershipRequest, BusinessMembership, 
-    Notification, EquipmentMaster, Achievement, UserActivity
+    Notification, EquipmentMaster, Achievement, UserActivity,
+    MainCategory, SubCategory, SubSubCategory
 )
 
 # **PersonalInfo Admin Panel**
@@ -12,13 +13,43 @@ class PersonalInfoAdmin(admin.ModelAdmin):
     list_filter = ("gender", "is_active")  
     ordering = ("-created_at",)  
 
+
+@admin.register(MainCategory)
+class MainCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "description")
+    search_fields = ("name",)
+
+
+@admin.register(SubCategory)
+class SubCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "main_category", "description")
+    list_filter = ("main_category",)
+    search_fields = ("name",)
+
+
+@admin.register(SubSubCategory)
+class SubSubCategoryAdmin(admin.ModelAdmin):
+    list_display = ("name", "sub_category", "description")
+    list_filter = ("sub_category",)
+    search_fields = ("name",)
+
+
 # **BusinessInfo Admin Panel**
 @admin.register(BusinessInfo)
 class BusinessInfoAdmin(admin.ModelAdmin):
-    list_display = ("business_name", "business_owner", "business_type", "established_year", "is_active")  
-    search_fields = ("business_name", "business_owner", "business_type")  
-    list_filter = ("business_type", "is_active")  
-    ordering = ("-established_year",)  
+    list_display = (
+        "user", "business_name", "main_category", "sub_category", "sub_sub_category", "business_phone"
+    )
+    list_filter = ("main_category", "sub_category", "sub_sub_category")
+    search_fields = ("business_name", "user__username", "business_phone")
+
+    fieldsets = (
+        ("Business Owner", {"fields": ("user",)}),
+        ("Category Details", {"fields": ("main_category", "sub_category", "sub_sub_category")}),
+        ("Business Details", {"fields": ("business_name", "business_about", "business_description")}),
+        ("Contact Information", {"fields": ("business_address", "business_phone", "business_website")}),
+    )
+
 
 # **MembershipRequest Admin Panel**
 @admin.register(MembershipRequest)

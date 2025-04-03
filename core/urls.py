@@ -8,6 +8,9 @@ urlpatterns = [
     
     # Business Info
     path('business-info/', BusinessInfoAPIView.as_view(), name='business-info-create'),
+    path('categories/', MainCategoryListAPIView.as_view(), name='main-category-list'),
+    path('categories/<main_category_id>/subcategories/', SubCategoryListAPIView.as_view(), name='sub-category-list'),
+    path('categories/<sub_category_id>/subsubcategories/', SubSubCategoryListAPIView.as_view(), name='sub-sub-category-list'),
     path('business-info/<pk>/', BusinessInfoAPIView.as_view(), name='business-info'),
     path('business/search/', BusinessSearchView.as_view(), name='business-search'),
     path('business/<business_id>/', BusinessDetailView.as_view(), name='business-detail'),

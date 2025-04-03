@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import PersonalInfo, BusinessInfo, Achievement, BusinessMembership, MembershipRequest
+from .models import PersonalInfo, BusinessInfo, Achievement, BusinessMembership, MembershipRequest, MainCategory, SubCategory, SubSubCategory
 from .serializers import *
 from django.db.models import Q
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -94,6 +94,39 @@ class PersonalInfoAPIView(APIView):
     #         return Response({"message": "Personal Info deleted successfully"})
     #     except PersonalInfo.DoesNotExist:
     #         return Response({"error": "Personal Info not found"}, status=404)
+
+
+
+
+class MainCategoryListAPIView(APIView):
+    """List all Main Categories"""
+    def get(self, request):
+        categories = MainCategory.objects.all()
+        serializer = MainCategorySerializer(categories, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class SubCategoryListAPIView(APIView):
+    """List all Subcategories of a given Main Category"""
+    def get(self, request, main_category_id):
+        try:
+            subcategories = SubCategory.objects.filter(main_category_id=main_category_id)
+            serializer = SubCategorySerializer(subcategories, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except MainCategory.DoesNotExist:
+            return Response({"error": "Main Category not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class SubSubCategoryListAPIView(APIView):
+    """List all Sub-subcategories of a given Subcategory"""
+    def get(self, request, sub_category_id):
+        try:
+            subsubcategories = SubSubCategory.objects.filter(sub_category_id=sub_category_id)
+            serializer = SubSubCategorySerializer(subsubcategories, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except SubCategory.DoesNotExist:
+            return Response({"error": "Sub Category not found"}, status=status.HTTP_404_NOT_FOUND)
+        
 
 
 # Business Info APIs using ID
