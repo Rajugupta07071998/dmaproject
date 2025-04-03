@@ -52,6 +52,10 @@ class RegisterView(APIView):
         if not all([username, email, mobile_number, user_type, password]):
             return Response({"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        valid_user_types = dict(User.USER_TYPE_CHOICES).keys()  
+        if user_type not in valid_user_types:
+            return Response({"error": "Invalid user type. Choose either 'personal' or 'business'."}, status=status.HTTP_400_BAD_REQUEST)
+
         if User.objects.filter(username=username).exists():
             return Response({"error": "Username already exists."}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(email=email).exists():
@@ -98,6 +102,10 @@ class VerifyOtpView(APIView):
             return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
 
         # Check for duplicate data
+        valid_user_types = dict(User.USER_TYPE_CHOICES).keys()  
+        if user_type not in valid_user_types:
+            return Response({"error": "Invalid user type. Choose either 'personal' or 'business'."}, status=status.HTTP_400_BAD_REQUEST)
+
         if User.objects.filter(username=username).exists():
             return Response({"error": "Username already exists."}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(email=email).exists():
