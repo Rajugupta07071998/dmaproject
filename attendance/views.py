@@ -319,74 +319,149 @@ class BatchAttendanceAPIView(APIView):
 
     def post(self, request, batch_id):
         """Mark attendance for selected users in a batch, with weekend handling."""
-        try:
-            batch = Batch.objects.get(id=batch_id, created_by=request.user)  # Only batch creator can mark
-            data = request.data
-            present_user_ids = set(data.get("present_user_ids", []))
-            date_str = data.get("date")
+        # try:
+        #     batch = Batch.objects.get(id=batch_id, created_by=request.user)  # Only batch creator can mark
+        #     data = request.data
+        #     present_user_ids = set(data.get("present_user_ids", []))
+        #     date_str = data.get("date")
 
+        #     if not date_str:
+        #         return Response({"error": "Date is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        #     # Convert date string to datetime object
+        #     date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        #     day_of_week = date.strftime("%A").lower()  # e.g., "monday", "saturday"
+
+        #     # Get all users in this batch
+        #     users_in_batch = User.objects.filter(batch_policy=batch)
+        #     all_user_ids = set(users_in_batch.values_list("id", flat=True))
+
+        #     absent_user_ids = all_user_ids - present_user_ids  # Unselected users = Absent
+        #     weekend_user_ids = set()  # Users who will be marked "Holiday" on weekends
+
+        #     attendance_entries = []
+        #     already_marked = []
+
+        #     # Check if it's a weekend
+        #     if day_of_week in ["saturday", "sunday"]:
+        #         status_value = "holiday"
+        #         weekend_user_ids = all_user_ids  # Mark all users as "Holiday"
+        #     else:
+        #         status_value = "present"  # Default status for selected users
+
+        #     # Mark attendance for users
+        #     for user in users_in_batch:
+        #         user_status = (
+        #             "holiday" if user.id in weekend_user_ids else
+        #             "present" if user.id in present_user_ids else
+        #             "absent"
+        #         )
+
+        #         try:
+        #             # Check if attendance already exists
+        #             if Attendance.objects.get(batch=batch, user=user, date=date):
+        #                 already_marked.append(user.id)
+        #                 continue  # Skip already marked users
+        #         except Attendance.DoesNotExist:
+        #             # Create new attendance entry
+        #             attendance_entries.append(Attendance(
+        #                 batch=batch,
+        #                 user=user,
+        #                 date=date,
+        #                 status=user_status,
+        #                 created_by=request.user
+        #             ))
+
+        #     # Bulk insert attendance records
+        #     Attendance.objects.bulk_create(attendance_entries)
+
+        #     return Response({
+        #         "message": "Attendance marked successfully",
+        #         "present_users": list(present_user_ids),
+        #         "absent_users": list(absent_user_ids),
+        #         "weekend_users": list(weekend_user_ids),
+        #         "skipped_users": already_marked  # Users already marked earlier
+        #     }, status=status.HTTP_201_CREATED)
+
+        # except Batch.DoesNotExist:
+        #     return Response({"error": "Batch not found or unauthorized access"}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            batch = Batch.objects.get(id=batch_id, created_by=request.user)
+            data = request.data
+            # Support both JSON and form-data (multi-value)
+            present_user_ids = set(data.get("present_user_ids", []))  # for form-data with multiple fields
+            if not present_user_ids:
+                present_user_ids = set(data.getlist("present_user_ids"))
+
+            date_str = data.get("date")
             if not date_str:
                 return Response({"error": "Date is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Convert date string to datetime object
-            date = datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
-            day_of_week = date.strftime("%A").lower()  # e.g., "monday", "saturday"
+            try:
+                date = datetime.strptime(date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Get all users in this batch
+            day_of_week = date.strftime("%A").lower()
+
+            # Get all users in the batch
             users_in_batch = User.objects.filter(batch_policy=batch)
-            all_user_ids = set(users_in_batch.values_list("id", flat=True))
+            all_user_ids = set([str(i) for i in users_in_batch.values_list("id", flat=True)])
 
-            absent_user_ids = all_user_ids - present_user_ids  # Unselected users = Absent
-            weekend_user_ids = set()  # Users who will be marked "Holiday" on weekends
+            absent_user_ids = all_user_ids - present_user_ids
+            weekend_user_ids = set()
 
             attendance_entries = []
             already_marked = []
 
-            # Check if it's a weekend
-            if day_of_week in ["saturday", "sunday"]:
-                status_value = "holiday"
-                weekend_user_ids = all_user_ids  # Mark all users as "Holiday"
-            else:
-                status_value = "present"  # Default status for selected users
+            # Check for weekend
+            is_weekend = day_of_week in ["saturday", "sunday"]
+            if is_weekend:
+                weekend_user_ids = all_user_ids
 
-            # Mark attendance for users
             for user in users_in_batch:
-                user_status = (
-                    "holiday" if user.id in weekend_user_ids else
-                    "present" if user.id in present_user_ids else
-                    "absent"
+                if is_weekend:
+                    status_value = "holiday"
+                elif str(user.id) in present_user_ids:
+                    status_value = "present"
+                else:
+                    status_value = "absent"
+
+                # Check if attendance already exists — if yes, update it (partial update)
+                attendance_obj, created = Attendance.objects.get_or_create(
+                    batch=batch,
+                    user=user,
+                    date=date,
+                    defaults={
+                        "status": status_value,
+                        "created_by": request.user,
+                    }
                 )
 
-                try:
-                    # Check if attendance already exists
-                    if Attendance.objects.get(batch=batch, user=user, date=date):
-                        already_marked.append(user.id)
-                        continue  # Skip already marked users
-                except Attendance.DoesNotExist:
-                    # Create new attendance entry
-                    attendance_entries.append(Attendance(
-                        batch=batch,
-                        user=user,
-                        date=date,
-                        status=user_status,
-                        created_by=request.user
-                    ))
+                if not created:
+                    attendance_obj.status = status_value
+                    attendance_obj.save()
+                    already_marked.append(user.id)
 
-            # Bulk insert attendance records
-            Attendance.objects.bulk_create(attendance_entries)
+                else:
+                    attendance_entries.append(attendance_obj)
+
+            # Save only newly created (optional if using get_or_create)
+            # Attendance.objects.bulk_create(attendance_entries)
 
             return Response({
                 "message": "Attendance marked successfully",
                 "present_users": list(present_user_ids),
                 "absent_users": list(absent_user_ids),
                 "weekend_users": list(weekend_user_ids),
-                "skipped_users": already_marked  # Users already marked earlier
+                "updated_users": already_marked  # previously marked and now updated
             }, status=status.HTTP_201_CREATED)
 
         except Batch.DoesNotExist:
             return Response({"error": "Batch not found or unauthorized access"}, status=status.HTTP_404_NOT_FOUND)
+            
         
-    
     def patch(self, request, batch_id):
         try:
             batch = Batch.objects.get(id=batch_id, created_by=request.user)  # Only batch creator can update
